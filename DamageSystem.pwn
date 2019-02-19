@@ -1,13 +1,32 @@
+// *********************************************************************
+//                             Damage System
+//
+//
+//  Script Information
+//                         (M/D/Y)
+//       Start Date.....: 2/10/2018             Script Author..: ZiiM
+//       Script Type....: Filterscript          Saving.........: INI
+//       File Type......: .pwn                  Archive Type...: .amx
+//
+//
+// *********************************************************************
+
+/*---------------------------------------------------------------------
+                            Includes 
+--------------------------------------------------------------------- */
 #include <a_samp>
-#include <foreach>
-#include <easyDialog>
 #include <izcmd>
 #include <sscanf2>
+#include <YSI\y_ini>
 
-
+/*---------------------------------------------------------------------
+                            Settings 
+--------------------------------------------------------------------- */
 #define MAX_DAMAGE 100
 
-// --Dialogs--
+/*---------------------------------------------------------------------
+                            Dialogs 
+--------------------------------------------------------------------- */
 #define DIALOG_DEFAULT 			0
 #define DIALOG_DAMAGES 			1
 #define DIALOG_SETTINGS 		2
@@ -23,11 +42,15 @@
 #define BODY_PART_RIGHT_LEG 8
 #define BODY_PART_HEAD 9
 
-// Debuging //
+/*---------------------------------------------------------------------
+                            Debugging 
+--------------------------------------------------------------------- */
+#define debug 0
 
-#define debug 1
 
-
+/*---------------------------------------------------------------------
+                            Variables 
+--------------------------------------------------------------------- */
 enum dmgData {
 	dmgExist,
 	dmgDamage,
@@ -38,24 +61,44 @@ enum dmgData {
 }
 new DamageData[MAX_PLAYERS][MAX_DAMAGE][dmgData];
 new TotalDamages[MAX_PLAYERS];
-new dmgEnabled;
+
+new bool:dmgEnabled;
 new WepDamage[43];
 
+/*---------------------------------------------------------------------
+                            Script Start 
+--------------------------------------------------------------------- */
+INI:wepdmg[Damages](name[], value[])
+{
+    for(new i = 0; i < 19; i++)
+    {
+        INI_Int(GetWepName(i), WepDamage[i]);
+    }
+    for(new i = 22; i < 39; i++)
+    {
+       INI_Int(GetWepName(i), WepDamage[i]); 
+    }
+    return 0;
+}
+
+INI:wepdmg[SystemToggle](name[], value[])
+{
+    INI_Bool("System", dmgEnabled);
+    return 0;
+}
 
 public OnFilterScriptInit()
 {
+    INI_Load("wepdmg.ini");
 	print("\n|----------------------------------|");
 	print("|  Damage System by ZiiM               |");
 	print("|----------------------------------|\n");
-	for(new i = 0; i < 43; i++)
-	{
-		WepDamage[i] = -1;
-	}
 	return 1;
 }
 
 public OnFilterScriptExit()
 {
+    SaveAll();
 	return 1;
 }
 
@@ -92,6 +135,7 @@ public OnPlayerSpawn(playerid)
 }
 
 
+
 public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 {
 	switch(dialogid)
@@ -124,20 +168,22 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 					case 1: //Enable/Disable weapon system
 					{
                         new msg[128];
-                        if(dmgEnabled == 0)
+                        if(dmgEnabled == true)
                         {
-                            dmgEnabled = 1;
+                            dmgEnabled = false;
                             format(msg, sizeof(msg), "%s just {A30104}Disabled{FFFFFF} the damage system", ReturnName(playerid));
                             SendClientMessage(playerid, 0xFFFFFFAA, msg);
+                            SaveAll();
                         }
-                        else if(dmgEnabled == 1)
+                        else if(dmgEnabled == false)
                         {
                             format(msg, sizeof(msg), "%s just {219A01}Enabled{FFFFFF} the damage system", ReturnName(playerid));
                             SendClientMessage(playerid, 0xFFFFFFAA, msg);
-                            dmgEnabled = 0;
+                            dmgEnabled = true;
+                            SaveAll();
                         }
 					}
-				}
+                }
 			}
 			return 1;
 
@@ -146,287 +192,328 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		{
             if(response)
             {
+                new caption[32], dia[256];
         		switch(listitem)
         		{
         			case 0:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 1:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 2:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 3:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 4:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 5:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 6:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 7:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 8:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 9:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+                        format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 10:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 11:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 12:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 13:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 14:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 15:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 16:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 17:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 18:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(listitem));
         				SetPVarInt(playerid, "WepEdit", listitem);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 19:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(22));
         				SetPVarInt(playerid, "WepEdit", 22);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 20:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(23));
         				SetPVarInt(playerid, "WepEdit", 23);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 21:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(24));
         				SetPVarInt(playerid, "WepEdit", 24);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 22:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(25));
         				SetPVarInt(playerid, "WepEdit", 25);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 23:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(26));
         				SetPVarInt(playerid, "WepEdit", 26);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 24:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(27));
         				SetPVarInt(playerid, "WepEdit", 27);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 25:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(28));
         				SetPVarInt(playerid, "WepEdit", 28);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 26:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(29));
         				SetPVarInt(playerid, "WepEdit", 29);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 27:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(30));
         				SetPVarInt(playerid, "WepEdit", 30);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 28:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(31));
         				SetPVarInt(playerid, "WepEdit", 31);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 29:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(32));
         				SetPVarInt(playerid, "WepEdit", 32);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 30:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(33));
         				SetPVarInt(playerid, "WepEdit", 33);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 31:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(34));
         				SetPVarInt(playerid, "WepEdit", 34);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 32:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(35));
         				SetPVarInt(playerid, "WepEdit", 35);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 33:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(36));
         				SetPVarInt(playerid, "WepEdit", 36);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 34:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(37));
         				SetPVarInt(playerid, "WepEdit", 37);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 35:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(38));
         				SetPVarInt(playerid, "WepEdit", 38);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 36:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(40));
         				SetPVarInt(playerid, "WepEdit", 40);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 37:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(41));
         				SetPVarInt(playerid, "WepEdit", 41);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 38:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(42));
         				SetPVarInt(playerid, "WepEdit", 42);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         			case 39:
         			{
-        				new caption[32];
+        				
         				format(caption, sizeof(caption), "%s", GetWepName(42));
         				SetPVarInt(playerid, "WepEdit", 42);
-        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, "Please input weapon damage\n{FF0000}For default damage set the damage to -1", "Enter", "Close");
+        				format(dia, sizeof(dia), "Please input weapon damage\n{FF0000}For default damage set the damage to -1\n{FFFFFF}Current DMG for %s is {FF0000}%s.", caption, ReturnWepDMG(GetPVarInt(playerid, "WepEdit")));
+        				ShowPlayerDialog(playerid, DIALOG_SET_DAMAGE, DIALOG_STYLE_INPUT, caption, dia, "Enter", "Close");
         			}
         		}
             }
@@ -434,17 +521,16 @@ public OnDialogResponse(playerid, dialogid, response, listitem, inputtext[])
 		}
 		case DIALOG_SET_DAMAGE:
 		{
-			new EditWep = GetPVarInt(playerid, "WepEdit");
-			new Damage = strval(inputtext);
-			WepDamage[EditWep] = Damage;
-
-			#if debug == 1 
-                printf("Editing Wep: %s(%d) | Weapon Damage: %d(%d)", GetWepName(EditWep), EditWep, WepDamage[EditWep], Damage);
-            #endif
-		}
-		case DIALOG_ENABLE_DISABLE:
-		{
-
+            if(response)
+            {
+    			new EditWep = GetPVarInt(playerid, "WepEdit");
+    			new Damage = strval(inputtext);
+    			WepDamage[EditWep] = Damage;
+    			#if debug == 1 
+                    printf("Editing Wep: %s(%d) | Weapon Damage: %d(%d)", GetWepName(EditWep), EditWep, WepDamage[EditWep], Damage);
+                #endif
+                SaveAll();
+            }
 		}
 	}
 	return 1;
@@ -463,7 +549,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 		new Float: HP, Float: armour, damage = floatround(amount, floatround_round), id, cdam = 0;
 		GetPlayerHealth(playerid, HP);
 		GetPlayerArmour(playerid, armour);
-        if(dmgEnabled == 0)
+        if(dmgEnabled == true)
         {
     		TotalDamages[playerid] ++;
     		for(new i = 0; i < MAX_DAMAGE; i++)
@@ -477,14 +563,15 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
     		if(WepDamage[weaponid] == -1)
     		{
     			DamageData[playerid][id][dmgDamage] = damage;
+                printf("Damage: %d", damage);
     		}
     		else
     		{
     			DamageData[playerid][id][dmgDamage] = WepDamage[weaponid];
                 cdam = 1;
-                #if debug == 1
-    			 printf("Wep: %d", WepDamage[weaponid]);
-                #endif
+                //#if debug == 1
+    			printf("Wep: %d", WepDamage[weaponid]);
+                //#endif
     		}
     		DamageData[playerid][id][dmgExist] = 1;
     		DamageData[playerid][id][dmgWeapon] = weaponid;
@@ -498,10 +585,6 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
     		{
     			DamageData[playerid][id][dmgArmour] = 0;
     		}
-            switch(weaponid)
-            {
-
-            }
             if(cdam == 1)
             {
                 if(armour > WepDamage[weaponid]) SetPlayerArmour(playerid, armour-WepDamage[weaponid]);
@@ -596,7 +679,7 @@ stock BPName(bodypart)
 CMD:damages(playerid, params[])
 {
 	new playa;
-    if(dmgEnabled == 1) return SendClientMessage(playerid, 0xFFFFFFAA, "The damage system is disabled. Ask for an admin to renable it.");
+    if(dmgEnabled == false) return SendClientMessage(playerid, 0xFFFFFFAA, "The damage system is disabled. Ask for an admin to renable it.");
 	if (!sscanf(params, "u", playa))
     {
     	new Float:x, Float:y, Float:z, vw, interior;
@@ -617,47 +700,6 @@ CMD:damages(playerid, params[])
     return 1;
 }
 
-CMD:checkteam(playerid, params[])
-{
-    new playa;
-    if(!IsPlayerAdmin(playerid))
-    {
-        SendClientMessage(playerid, 0xFF0000AA,"You are not a admin");
-        return 1;
-    }
-    if (!sscanf(params, "u", playa))
-    {
-        new string[128];
-        format(string, sizeof(string), "%s is on team %d", ReturnName(playa), GetPlayerTeam(playa));
-        SendClientMessageToAll(0xFF0000AA, string);
-
-    } else {
-        SendClientMessage(playerid, 0xFF0000AA, "[SYNTAX] /checkteam [playerid/name]");
-    }
-    return 1;
-}
-
-CMD:setteam(playerid, params[])
-{
-    new playa, team;
-    if(!IsPlayerAdmin(playerid))
-    {
-        SendClientMessage(playerid, 0xFF0000AA,"You are not a admin");
-        return 1;
-    }
-    if (!sscanf(params, "ud", playa, team))
-    {
-        new string[128];
-        format(string, sizeof(string), "%s set %s to team %d", ReturnName(playerid), ReturnName(playa), team);
-        SendClientMessageToAll(0xFF0000AA, string);
-        SetPlayerTeam(playa, team);
-
-    } else {
-        SendClientMessage(playerid, 0xFF0000AA, "[SYNTAX] /checkteam [playerid/name]");
-    }
-    return 1;
-}
-
 CMD:resetdamages(playerid, params[])
 {
 	new playa;
@@ -666,7 +708,7 @@ CMD:resetdamages(playerid, params[])
 		SendClientMessage(playerid, 0xFF0000AA,"You are not a admin");
 		return 1;
 	}
-    if(dmgEnabled == 1) return SendClientMessage(playerid, 0xFFFFFFAA, "The damage system is disabled. Ask for an admin to renable it.");
+    if(dmgEnabled == false) return SendClientMessage(playerid, 0xFFFFFFAA, "The damage system is disabled. Ask for an admin to renable it.");
 	if (!sscanf(params, "u", playa))
     {
     	new string[128];
@@ -692,6 +734,21 @@ CMD:settings(playerid, params[])
 		SendClientMessage(playerid, 0xFF0000AA, "You are not a admin");
 	}
 	return 1;
+}
+
+CMD:saveall(playerid, params[])
+{
+    if(IsPlayerAdmin(playerid))
+    {
+        SaveAll();
+        SendClientMessage(playerid, 0xFF0000AA, "DamageSystem has been saved.");
+        return 1;
+    }
+    else
+    {
+        SendClientMessage(playerid, 0xFF0000AA, "You are not a admin");
+    }
+    return 1;
 }
 
 stock ShowPlayerDamages(damageid, playerid)
@@ -752,7 +809,7 @@ stock GetWepName(weaponid)
 stock dmgEnable()
 {
     new dia[64];
-    if(dmgEnabled == 0)
+    if(dmgEnabled == true)
     {
         format(dia, sizeof(dia), "{219A01}Enabled");
         return dia;
@@ -762,4 +819,62 @@ stock dmgEnable()
         format(dia, sizeof(dia), "{A30104}Disabled");
         return dia;  
     }
+}
+
+stock ReturnWepDMG(wep)
+{
+    new msg[32];
+    if(WepDamage[wep] == -1)
+    {
+        format(msg, sizeof(msg), "default");
+        return msg;
+    }
+    else
+    {
+        format(msg, sizeof(msg), "%d", WepDamage[wep]);
+        #if debug == 1
+            printf("WepDMG: %d", WepDamage[wep]);
+        #endif
+        return msg;
+    }
+}
+
+SaveAll()
+{
+    new INI:ini = INI_Open("wepdmg.ini");
+    new b = 0;
+    INI_SetTag(ini, "Damages");
+    for(new i = 0; i < 19; i++)
+    {
+        if(WepDamage[i] == 0)
+        {
+            b++;
+        }
+        INI_WriteInt(ini, GetWepName(i), WepDamage[i]);
+    }
+    for(new i = 22; i < 39; i++)
+    {
+        if(WepDamage[i] == 0)
+        {
+            b++;
+        }
+        INI_WriteInt(ini, GetWepName(i), WepDamage[i]);
+    }
+    if(b == 36)
+    {
+        for(new i = 0; i < 19; i++)
+        {
+            INI_WriteInt(ini, GetWepName(i), -1);
+            WepDamage[i] = -1;
+        }
+        for(new i = 22; i < 39; i++)
+        {
+            INI_WriteInt(ini, GetWepName(i), -1);
+            WepDamage[i] = -1;
+        }
+    }
+    INI_SetTag(ini, "SystemToggle");
+    INI_WriteBool(ini, "System", dmgEnabled);
+    INI_Close(ini);
+    return 1;
 }
